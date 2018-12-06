@@ -1,0 +1,47 @@
+* OLSR
+** Introduction
+**** page 4
+ - 用途：移动自治系统
+ - *MPR*：邻居节点的子集 通过减少需要转发的节点数有效控制洪泛
+ - MPR的responsibility：forwarding control traffic、declaring link state information in the network
+ - MPR将链路状态信息发给邻居MPR节点, 声明可达性
+ - MPR的选择是双向的
+*** OLSR Terminology
+**** page 5 
+ - single/muliple OLSR interface node:
+    A node which has single/multiple OLSR interfaces, participating in an OLSR routing domain.
+**** page 6
+ - main address:在协议中节点的标志，唯一且固定
+ - 2-hop neighbor/strict 2-hop neighbor
+ - MPR: 如果节点A被节点B选为MPR，A将转发所有B发送的广播信息（保证信息未重复，TTL>1）
+**** page 7
+ - 对称/非对称链接
+ - 对称邻居节点：至少有一条对称链接的邻居节点
+*** Applicabilty
+**** page 7
+ - OLSR是用于移动ad-hoc网络的主动路由协议,网络越大、越复杂，OLSR的优化效果越明显
+ - 使用逐跳路由，即路由器将路由信息保存在本地
+ - OLSR同时还可以用在通信双方不断变化的网络中
+*** Protocol Overview
+**** page 8
+ - 相比于传统的LS算法，OLSR保留了稳定性，同时使路由变得即插即用（routes immediately available）
+ - 减少了传递路由控制信息的开销
+ - 只需要发送部分链路状态（The minimal set of link state information required is, that all nodes, selected as MPRs, MUST declare the links to their MPR selectors.）
+ - 通过减小发送控制信息的间隔，优化对拓扑信息变化的反应 
+ - OLSR是一个独立的协议，不依靠与可靠的数据传输，即允许丢包
+ - 不需要按顺序传递消息
+**** page 9
+ - 提供协议扩展，如：睡眠模式操作，组播路由
+ - 未改变IP数据包的结构，任何现有的IP栈都可以直接使用
+*** Multipoint Relays
+**** page 9
+ - 减少在同一区域内的冗余控制信息传输
+ - MPR集合的选择要能覆盖所有的symmetric strict 2-hop nodes
+ - N节点的MPR集记作MPR（N）
+ - MPR（N）是N的对称邻居节点中的满足下列条件的任意子集，
+   - every node in the symmetric strict 2-hop neighborhood of N must have a symmetric link towards MPR(N).
+ - MPR selector set：每个节点保存将自己设为MPR节点的相邻节点的信息
+ - N向MPR（N）中的节点定时发送HELLO信息
+** TODO Protocol Functioning
+*** Core Functioning
+**** page 10
