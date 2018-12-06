@@ -1,5 +1,5 @@
 
-# WirelessProtocol - OLSR(Optimized Link State Routing Protocol)
+# OLSR(Optimized Link State Routing Protocol)
 
   ## Homework
 
