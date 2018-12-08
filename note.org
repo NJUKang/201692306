@@ -1,7 +1,7 @@
 * OLSR
 ** Introductio
  - 用途：移动自治系统 mobile ad-hoc networks (MANETs)
- - *MPR*：邻居节点的子集 通过减少需要转发的节点数有效控制洪泛
+ - *MPR* ：邻居节点的子集 通过减少需要转发的节点数有效控制洪泛
  - MPR的responsibility：forwarding control traffic、declaring link state information in the network
  - MPR将链路状态信息发给邻居MPR节点, 声明可达性
  - MPR的选择是双向的
@@ -148,7 +148,7 @@
 	 - D_time    = current time + DUP_HOLD_TIME
 	 - The receiving interface (address) is added to D_iface_list
 	 - D_retransmitted is set to true if and only if the message  will be retransmitted according to step 4
-      2. Otherwise an entry in the duplicate set is recorded with:
+      2. otherwise an entry in the duplicate set is recorded with:
 	 - D_addr    = Originator Address
 	 - D_seq_num = Message Sequence Number
 	 - D_time    = current time + DUP_HOLD_TIME
@@ -202,7 +202,7 @@
 **** MPR Set
  - A node maintains a set of neighbors which are selected as MPR. Their main addresses are listed in the MPR Set.
 **** TODO MPR Selector Set
-
+     
 
 
 
