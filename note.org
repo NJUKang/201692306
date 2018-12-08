@@ -1,40 +1,32 @@
 * OLSR
-** Introduction
-**** page 4
- - 用途：移动自治系统
+** Introductio
+ - 用途：移动自治系统 mobile ad-hoc networks (MANETs)
  - *MPR*：邻居节点的子集 通过减少需要转发的节点数有效控制洪泛
  - MPR的responsibility：forwarding control traffic、declaring link state information in the network
  - MPR将链路状态信息发给邻居MPR节点, 声明可达性
  - MPR的选择是双向的
 *** OLSR Terminology
-**** page 5 
  - single/muliple OLSR interface node:
-    A node which has single/multiple OLSR interfaces, participating in an OLSR routing domain.
-**** page 6
+    A node which has single/multiple OLSR interfaces, participating in an OLSR routing domain
  - main address:在协议中节点的标志，唯一且固定
  - 2-hop neighbor/strict 2-hop neighbor
- - MPR: 如果节点A被节点B选为MPR，A将转发所有B发送的广播信息（保证信息未重复，TTL>1）
-**** page 7
+ - MPR: 如果节点A被节点B选为MPR，A将转发所有B发送的广播信息（保证信息未重复，TTL>1
  - 对称/非对称链接
  - 对称邻居节点：至少有一条对称链接的邻居节点
-*** Applicabilty
-**** page 7
+*** Applicabilt
  - OLSR是用于移动ad-hoc网络的主动路由协议,网络越大、越复杂，OLSR的优化效果越明显
  - 使用逐跳路由，即路由器将路由信息保存在本地
  - OLSR同时还可以用在通信双方不断变化的网络中
-*** Protocol Overview
-**** page 8
+*** Protocol Overvie
  - 相比于传统的LS算法，OLSR保留了稳定性，同时使路由变得即插即用（routes immediately available）
  - 减少了传递路由控制信息的开销
  - 只需要发送部分链路状态（The minimal set of link state information required is, that all nodes, selected as MPRs, MUST declare the links to their MPR selectors.）
  - 通过减小发送控制信息的间隔，优化对拓扑信息变化的反应 
  - OLSR是一个独立的协议，不依靠与可靠的数据传输，即允许丢包
- - 不需要按顺序传递消息
-**** page 9
+ - 不需要按顺序传递消
  - 提供协议扩展，如：睡眠模式操作，组播路由
  - 未改变IP数据包的结构，任何现有的IP栈都可以直接使用
-*** Multipoint Relays
-**** page 9
+*** Multipoint Relay
  - 减少在同一区域内的冗余控制信息传输
  - MPR集合的选择要能覆盖所有的symmetric strict 2-hop nodes
  - N节点的MPR集记作MPR（N）
@@ -42,6 +34,184 @@
    - every node in the symmetric strict 2-hop neighborhood of N must have a symmetric link towards MPR(N).
  - MPR selector set：每个节点保存将自己设为MPR节点的相邻节点的信息
  - N向MPR（N）中的节点定时发送HELLO信息
-** TODO Protocol Functioning
+** Protocol Functioning
 *** Core Functioning
-**** page 10
+ - 数据包格式和转发
+ - 链路传感（定时发送HELLO信息）
+ - 相邻检测
+ - MPR选择和MPR信号（MPR Signaling）
+ - 拓扑控制信息扩散
+ - 路由计算
+ - 核心功能的关键：MPR关系
+ | Feature                      | Section |
+ |------------------------------+---------|
+ | Packet format and forwarding |       3 |
+ | Information repositories     |       4 |
+ | Main addr and multiple if.   |       5 |
+ | Hello messages               |       6 |
+ | Link sensing                 |       7 |
+ | Neighbor detection           |       8 |
+ | Topology discovery           |       9 |
+ | Routing table computation    |      10 |
+ | Node configuration           |      11 |
+*** Auxiliary Functioning
+ | Feature                  | Section |
+ |--------------------------+---------|
+ | Non-OLSR interfaces      |      12 |
+ | Link-layer notifications |      13 |
+ | Advanced link sensing    |      14 |
+ | Redundant topology       |      15 |
+ | Redundant MPR flooding   |      16 |
+** Packet Format and Forwarding
+ - piggybacking 捎带
+ - 使用统一数据包格式的目的：
+   1. 实现协议的可拓展性，即不破坏向后兼容性
+   2. 在一次传输中可实现多类信息的捎带确认
+   3. 可利用网络中最大帧大小实现优化
+ - 嵌入UDP报文传输
+*** Protocol and Port Number
+ - UDP Port 698
+*** Main Address
+ - For a node with one interface, the main address of a node, as defined in "OLSR Terminology", MUST be set to the address of that interface.
+*** Packet Format
+  0                   1                   2                   3
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |         Packet Length         |    Packet Sequence Number     |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |  Message Type |     Vtime     |         Message Size          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                      Originator Address                       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |  Time To Live |   Hop Count   |    Message Sequence Number    |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                                                               |
+  :                            MESSAGE                            :
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |  Message Type |     Vtime     |         Message Size          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                      Originator Address                       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |  Time To Live |   Hop Count   |    Message Sequence Number    |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |                                                               |
+  :                            MESSAGE                            :
+  |                                                               |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  :                                                               :
+**** Packet Header
+ - Packet Length：数据包大小
+ - Packet Sequence Number：数据包序列号
+ - 如数据包长度小于或等于首部长度，该数据包直接丢弃（在IPv4中，Packet Length < 16）
+ - The IP address：在IP首部中，可以获得发包接口的IP地址，故不用添加额外的信息
+**** Message Header
+ - Message Type：标明信息类型，0-127
+ - Vtime：接受到信息的有效时间, validity time = C*(1+a/16)* 2^b  [in seconds]
+   - a：the integer represented by the four highest bits of Vtime field
+   - b：the integer represented by the four lowest bits of Vtime field
+   - C: the proposed value of the scaling factor
+ - Message Size：消息的大小，从当前Message Type域到下一个Messgage Type的字节数(or - if there are no following messages - until the end of the packet)
+ - Originator Address：信息的原始来源，在转发过程中，不会变化
+ - Time To Live：转发的最大跳数，每次转发前减一
+ - Hop Count：参与转发的跳数，每次转发前加一
+ - Message Sequence Number：原始节点生成信息时产生的唯一的序列号，用于判断该信息是否已经被转发过
+*** Packet Processing and Message Flooding
+ - 检查每个 Message Header
+   - 根据Message Type域，判断信息的下一步处理（the fate of the message）
+ - 为避免对消息的重复处理，每个节点维护一个Duplicate Set
+   - Duplicate Tuple：(D_addr, D_seq_num, D_retransmitted, D_iface_list, D_time)
+     - D_addr：信息的原始发包地址
+     - D_seq_num：信息的序列号
+     - D_retransmitted：布尔变量，标明信息是否被转发过
+     - D_iface_list：接受到该信息的接口集
+     - D_time：该Duplicate Tuple的失效时间，失效后必须删除
+ - 接收到数据包后的处理流程：
+   1. if the Packet Length < or = the size of the packet header, 直接丢弃（discard）
+   2. if TTL < or = 0, or 该信息是由当前节点生成，直接丢弃（drop）
+   3. 处理条件：
+      1. if 在duplicate set中存在元组使得 D_addr = Originator Address, and D_seq_num = Message Sequence Number，则说明该信息已经被处理过，不再重复处理
+      2. otherwise, 如果当前节点实现了该信息类型的处理，则根据该信息类型进行处理
+   4. 转发条件：
+      1. if 在duplicate set中存在元组使得 D_addr = Originator Address, and D_seq_num = Message Sequence Number, and 接收接口地址在D_iface_list中, 则说明该信息已经转发过，不再重复转发
+      2. otherwise:
+	 1. 如果当前节点实现了该信息类型的转发，则根据该信息类型进行转发
+	 2. 否则运行默认转发算法(Default Forwarding Algorithm)
+**** Default Forwarding Algorithm
+ - 默认转发函数如下：
+   1. if 该消息的发送接口不在当前节点的双向相邻节点集中，则转发算法停止，不再转发
+   2. if 在duplicate set中存在元组使得 D_addr = Originator Address, and D_seq_num = Message Sequence Number，那么只有满足D_retransmitted is false, and 接受端口地址不在D_iface_list中，才会转发
+   3. if 元组不存在，该消息进行进一步的转发
+   4. if 发送接口地址在当前节点的MPR selector集中, and TTL > 1, 则该消息必须转发
+   5. 更新duplicate set:
+      1. if 元组存在，则更新该元组：
+	 - D_time    = current time + DUP_HOLD_TIME
+	 - The receiving interface (address) is added to D_iface_list
+	 - D_retransmitted is set to true if and only if the message  will be retransmitted according to step 4
+      2. Otherwise an entry in the duplicate set is recorded with:
+	 - D_addr    = Originator Address
+	 - D_seq_num = Message Sequence Number
+	 - D_time    = current time + DUP_HOLD_TIME
+	 - D_iface_list contains the receiving interface address
+	 - D_retransmitted is set to true if and only if the message will be retransmitted according to step 4
+   6. TTL = TTL - 1
+   7. hop-count = hop-count + 1
+   8. 将消息通过所有接口进行广播
+**** Considerations on Processing and Forwarding
+ - 处理和转发不同，有不同的限制条件
+ - 若消息的类型已知，不能盲目地使用默认转发算法
+ - OLSR核心功能中的REQUIRED消息类型：
+   - HELLO-messages: performing the task of link sensing, neighbor detection and MPR signaling
+   - TC-messages: performing the task of topology declaration (advertisement of link states)
+   - MID-messages: performing the task of declaring the presence of multiple interfaces on a node
+*** Message Emission and Jitter
+ - OLSR控制消息的发送应该避免同时发送，否则会产生碰撞，导致丢包
+ - 为避免同时发送控制信息，节点在信息发送中应加入随机的抖动，即：Actual message interval = MESSAGE_INTERVAL - jitter
+ - 当节点要转发信息时，应有一个短暂的停顿：Keep message period = jitter
+ - 当节点发送控制信息时，可以捎带确认其他信息
+ - Notice, that a minimal rate of control messages is imposed.  A node MAY send control messages at a higher rate, if beneficial for a specific deployment.
+** Information Repositories
+ - 通过OLSR控制信息的交换，每个节点获得网络的信息，这些信息存储在每个节点的信息库中
+*** Multiple Interface Association Information Base
+ - Interface Association: (I_iface_addr, I_main_addr, I_time)
+   - I_iface_addr: an interface address of a node
+   - I_main_addr: the main address of this node
+   - I_time: the time ai which this tuple expires and MUST be removed
+*** Link Sensing: local Link Information Base
+ - The local link information base stores information about links to neighbors
+*** Link Set:
+ - Link Tuples: (L_local_iface_addr, L_neighbor_iface_addr, L_SYM_time, L_ASYM_time, L_time)
+   - L_local_iface_addr: the interface address of the local node(i.e., one endpoint of the link)
+   - L_neighbor_iface_addr: the interface address of the neighbor node(i.e., the other endpoint of the link)
+   - L_SYM_time: the time until which the link is considered symmetric
+   - L_ASYM_time: the time until which the neighbor interface is considered heard
+   - L_time: the time at which this record expires and MUST be removed
+   - 当L_SYM_time和L_ASYM_time都过期时，该链接被视为丢失
+   - L_SYM_time用来标志链路的状态，如果未过期，链路必修被声明为对称链路；如果过期，则必须被声明为非对称链路
+*** Neighbor Detection: Neighborhood Information Base
+**** Neighor Set
+ - neighor tuples: (N_neighbor_main_addr, N_status, N_willingness)
+   - N_neighbor_main_addr: the main address of a neighbor
+   - N_status: specific if the node is NOT_SYM or SYM
+   - N_willingness: an integer between 0 and 7, and specifies the node's willingness to traffic on behalf of other nodes
+**** 2-hop Neighbor Set
+ - 2-hop tuples: (N_neighbor_main_addr, N_2hop_addr, N_time) 描述邻居节点和2跳邻居节点间的对称链路
+   - N_neighbor_main_addr: the main address of a neighor
+   - N_2hop_addr: the main address of a 2-hop neighbor with a symmetric link to N_neighbor_main_addr
+   - N_time: specific the time at which the tuple expires and MUST be removed
+**** MPR Set
+ - A node maintains a set of neighbors which are selected as MPR. Their main addresses are listed in the MPR Set.
+**** TODO MPR Selector Set
+
+
+
+
+
+
+
+
+
+
+
+     
+
