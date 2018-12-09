@@ -74,6 +74,7 @@
 *** Main Address
  - For a node with one interface, the main address of a node, as defined in "OLSR Terminology", MUST be set to the address of that interface.
 *** Packet Format
+#+BEGIN_SRC 
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -100,6 +101,7 @@
   |                                                               |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   :                                                               :
+#+END_SRC
 **** Packet Header
  - Packet Length：数据包大小
  - Packet Sequence Number：数据包序列号
