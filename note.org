@@ -74,7 +74,6 @@
 *** Main Address
  - For a node with one interface, the main address of a node, as defined in "OLSR Terminology", MUST be set to the address of that interface.
 *** Packet Format
-#+BEGIN_QUOTE
   0                   1                   2                   3
   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -101,8 +100,6 @@
   |                                                               |
   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
   :                                                               :
-
-#+END_QUOTE
 **** Packet Header
  - Packet Length：数据包大小
  - Packet Sequence Number：数据包序列号
@@ -182,15 +179,15 @@
    - I_time: the time ai which this tuple expires and MUST be removed
 *** Link Sensing: local Link Information Base
  - The local link information base stores information about links to neighbors
-*** Link Set:
- - Link Tuples: (L_local_iface_addr, L_neighbor_iface_addr, L_SYM_time, L_ASYM_time, L_time)
-   - L_local_iface_addr: the interface address of the local node(i.e., one endpoint of the link)
-   - L_neighbor_iface_addr: the interface address of the neighbor node(i.e., the other endpoint of the link)
-   - L_SYM_time: the time until which the link is considered symmetric
-   - L_ASYM_time: the time until which the neighbor interface is considered heard
-   - L_time: the time at which this record expires and MUST be removed
-   - 当L_SYM_time和L_ASYM_time都过期时，该链接被视为丢失
-   - L_SYM_time用来标志链路的状态，如果未过期，链路必修被声明为对称链路；如果过期，则必须被声明为非对称链路
+**** Link Set:
+  - Link Tuples: (L_local_iface_addr, L_neighbor_iface_addr, L_SYM_time, L_ASYM_time, L_time)
+    - L_local_iface_addr: the interface address of the local node(i.e., one endpoint of the link)
+    - L_neighbor_iface_addr: the interface address of the neighbor node(i.e., the other endpoint of the link)
+    - L_SYM_time: the time until which the link is considered symmetric
+    - L_ASYM_time: the time until which the neighbor interface is considered heard
+    - L_time: the time at which this record expires and MUST be removed
+    - 当L_SYM_time和L_ASYM_time都过期时，该链接被视为丢失
+    - L_SYM_time用来标志链路的状态，如果未过期，链路必修被声明为对称链路；如果过期，则必须被声明为非对称链路
 *** Neighbor Detection: Neighborhood Information Base
 **** Neighor Set
  - neighor tuples: (N_neighbor_main_addr, N_status, N_willingness)
@@ -204,17 +201,30 @@
    - N_time: specific the time at which the tuple expires and MUST be removed
 **** MPR Set
  - A node maintains a set of neighbors which are selected as MPR. Their main addresses are listed in the MPR Set.
-**** TODO MPR Selector Set
-     
-
-
-
-
-
-
-
-
-
-
-     
-
+**** MPR Selector Set
+ - MPR-selector tuples: (MS_main_addr, MS_time)
+   - MS_main_addr: thr main address of a node, which has selected this node as MPR
+   - MS_time: specific the time at which the tuple expires and MUST be removed
+*** Topology Informaation Base
+ - Topology Tuple: (T_dest_addr, T_last_addr, T_seq, T_time)
+   - T_dest_addr: the main address of a node, which may be reached in one hop from the node with the main address T_last_addr
+   - T_last_addr: a MPR of T_dest_addr
+   - T_seq: a sequence number
+   - T_time: specific the time at which this tuple expires and MUST be removed
+** Main Addresses and Multiple Interfaces
+ - Multiple Interface Declaration (MID) messages: 在多接口节点通信中，定义接口的关系和节点主地址
+ - 每个节点通过广播MID信息，通知整个网络自身与其他节点的接口配置
+ - 每个节点维护整个网络中其他节点的接口信息（从MID信息中获取），并用来计算路由转发表
+*** TODO MID Message Format 
+ - The proposed format of a MID message is as follows:
+       #+BEGIN_SRC 
+       0                   1                   2                   3
+       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                    OLSR Interface Address                     |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                    OLSR Interface Address                     |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+      |                              ...                              |
+      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+       
+       #+END_SRC
