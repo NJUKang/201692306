@@ -1,5 +1,5 @@
-* OLSR Note
-** Introduction
+* OLSR
+** Introductio
  - 用途：移动自治系统 mobile ad-hoc networks (MANETs)
  - *MPR* ：邻居节点的子集 通过减少需要转发的节点数有效控制洪泛
  - MPR的responsibility：forwarding control traffic、declaring link state information in the network
@@ -17,7 +17,7 @@
  - OLSR是用于移动ad-hoc网络的主动路由协议,网络越大、越复杂，OLSR的优化效果越明显
  - 使用逐跳路由，即路由器将路由信息保存在本地
  - OLSR同时还可以用在通信双方不断变化的网络中
-*** Protocol Overview
+*** Protocol Overvie
  - 相比于传统的LS算法，OLSR保留了稳定性，同时使路由变得即插即用（routes immediately available）
  - 减少了传递路由控制信息的开销
  - 只需要发送部分链路状态（The minimal set of link state information required is, that all nodes, selected as MPRs, MUST declare the links to their MPR selectors.）
@@ -217,19 +217,125 @@
  - Multiple Interface Declaration (MID) messages: 在多接口节点通信中，定义接口的关系和节点主地址
  - 每个节点通过广播MID信息，通知整个网络自身与其他节点的接口配置
  - 每个节点维护整个网络中其他节点的接口信息（从MID信息中获取），并用来计算路由转发表
-*** TODO MID Message Format 
+*** MID Message Format 
  - The proposed format of a MID message is as follows:
-       #+BEGIN_SRC 
-       0                   1                   2                   3
-       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-      |                    OLSR Interface Address                     |
-      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-      |                    OLSR Interface Address                     |
-      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-      |                              ...                              |
-      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+       
-       #+END_SRC
-* use this to record your progress
-** TODO 
-<2018-12-14 Fri>
+ #+BEGIN_SRC 
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                    OLSR Interface Address                     |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                    OLSR Interface Address                     |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                              ...                              |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+       
+ #+END_SRC
+ - 消息首部的Message Type设为MID_MESSAGE, TTL设为255（maximun value）, Vtime设为MID_HOLD_TIME
+ - OLSR Interface Address 中为当前节点除主地址之外的某个OLSR接口的地址
+ - 如果一个MID信息空间不足，将生成多个MID信息，以包含所有的接口地址
+*** MID Message Generation
+ - 在节点中，对所有MID信息的处理必须在一个刷新周期（MID_INTERVAL）内完成
+ - 只有一个OLSR接口的节点不发送MID信息
+*** MID Message Forwarding
+ - MID信息的转发使用默认转发算法(default forwarding algorithm)
+*** MID Message Processing
+ - 当收到MID信息时，节点将对关联多接口信息集进行更新：
+   1. if 该信息不是来自对称相邻节点，直接丢弃
+   2. for each 节点地址 in MID信息：
+      1. if 关联接口集中存在I_iface_addr = interface address, and I_main_addr = originator address, 则修改元组的I_time为current time + validity time
+      2. else 新建元组I_iface_addr = interface address, I_main_addr = originator address, I_time = current time + validity time
+*** Resovling a Main Address from an Interface Address 
+ - 从接口地址解析主地址
+ - 给定一个接口地址：
+   1. 如果在关联接口集中存在元组I_iface_addr = interface address, 则主地址为该元组的原始发送地址
+   2. 否则主地址为接口地址本身
+** HELLO Message Format and Generation
+ - HELLO Message 是一种更新本地节点信息集和邻居信息集的常见机制
+*** HELLO Message Format
+ #+BEGIN_SRC 
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |          Reserved             |     Htime     |  Willingness  |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |   Link Code   |   Reserved    |       Link Message Size       |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                  Neighbor Interface Address                   |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                  Neighbor Interface Address                   |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ :                             .  .  .                           :
+ :                                                               :
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |   Link Code   |   Reserved    |       Link Message Size       |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                  Neighbor Interface Address                   |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ |                  Neighbor Interface Address                   |
+ +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ :                                                               :
+ :                                       :
+ #+END_SRC
+ - Reserved：保留标志位，必须设为为"0000000000000000"
+ - HTime：定义发送HELLO信息的间隔，HELLO emission interval=C*(1+a/16)*2^b  [in seconds]
+ - Willingness：节点发送路由信息的意愿，WILL_NEVER/WILL_ALWAYS, 默认为WILL_DEFAULT
+ - Link Code: 指定发送节点与following list中相邻节点链接的信息和相邻节点的状态
+ - Link Message Size: Link信息的大小（bytes），从当前Link Code到下一个Link Code
+**** Link Code as Link Type and Neighbor Type
+ - 只考虑Link Code<16时的情况
+ #+BEGIN_SRC 
+     7       6       5       4       3       2       1       0
+ +-------+-------+-------+-------+-------+-------+-------+-------+
+ |   0   |   0   |   0   |   0   | Neighbor Type |   Link Type   |
+ +-------+-------+-------+-------+-------+-------+-------+-------+
+ #+END_SRC
+ - The following four "Link Types" are REQUIRED by OLSR:
+   - UNSPEC_LINK - indicating that no specific information about the links is given
+   - ASYM_LINK - indicating that the links are asymmetric (i.e., the neighbor interface is "heard")
+   - SYM_LINK - indicating that the links are symmetric with the interface
+   - LOST_LINK - indicating that the links have been lost
+ - The following three "Neighbor Types" are REQUIRED by OLSR:
+   - SYM_NEIGH - indicating that the neighbors have at least one symmetrical link with this node
+   - MPR_NEIGH - indicating that the neighbors have at least one symmetrical link AND have been selected as MPR by the sender
+   - NOT_NEIGH - indicating that the nodes are either no longer or have not yet become symmetric neighbors
+ - Link Type = SYM_LINK AND Neighbor Type = NOT_NEIGH的link code是无意义的，直接丢弃
+*** HELLO Message Generation
+ - HELLO信息涉及链路集、邻居集和MPR集的传输，主要任务包括：链路感知(link sensing)、邻域检测(neighbor detection)、MPR选择信号(MPR selection signaling)
+ - 节点必须在每个接口上执行链路感知
+ - 节点必须告知其所有相邻对称邻居节点，以执行邻居检测
+ - HELLO信息必须包括指定节点的链接（相关的链路类型）和所有的邻居节点（包含相关的邻居类型） 
+ - Vtime用于邻居节点设置NEIGHB_HOLD_TIME
+ - Link Set中的每个元组，其L_local_iface_addr是HELLO将被转发的接口，L_time>=current time
+ - L_neighbor_iface_addr将被广播：
+   1. 链接类型根据以下内容设置：
+      1. if L_SYM_time >= current time (not expired), Link Type = SYM_LINK
+      2. else, if  L_ASYM_time >= current time (not expired) AND L_SYM_time < current time (expired), Link Type = ASYM_LINK
+      3. else, if if L_ASYM_time < current time (expired) AND L_SYM_time < current time (expired), Link Type = LOST_LINK
+   2. 邻居节点类型将根据一下内容设置：
+      1. 如果邻居节点地址对应的主地址在MPR集中，Neighbor Type = MPR_NEIGH
+      2. 如果主地址在neighbor set中，且N_status == SYM,则Neighbor Type = SYM_NEIGH；否则，Neighbor Type = NOT_NEIGH
+ - 对于Neighbor Set中的元组，如果之前没有对应的link tuple被转发过，则把Link Type设为UNSPEC_LINK
+ - 每个链路和节点在固定的刷新间隔内必须被引用一次（be cited）
+ - 为保持链接的快速变化，HELLO信息发送间隔至少应为HELLO_INTERVAL，小于或等于REFRESH_INTERVAL
+ - 为了减小控制信息消失的影响，一个信息应该可以放到一个MAC数据帧中
+*** HELLO Message Forwarding
+ - HELLO Message不会被转发
+*** HELLO Message Processing
+ - 节点处理收到的HELLO信息是为了进行链路感知、相邻检查和MPR选择集扩充
+** Link Sensing
+ - 链路感知填充本地链路信息库
+ - 链路感知关注于OLSR接口地址和接口间进行HELLO信息交换的能力
+*** Populating the Link Set
+**** HELLO Message Processing
+ - HELLO信息的Originator Address是发送节点的主地址
+ - 收到一个HELLO信息后，Link Set将会更新：
+   1. 如果没有链路元组的L_neighbor_iface_addr == Source Address，则创建一个新的元组L_neighbor_iface_addr = Source Address； L_local_iface_addr = Address of the interface，which received the HELLO message； L_SYM_time = current time - 1 (expired)；L_time= current time + validity time
+   2. 如果有相应的元组满足条件，则修改元组：
+      1. L_ASYM_time = current time + validity time
+      2. 如果节点发现收到HELLO信息的接口地址在Link message中，元组将被修改：
+	 1. if Link Type is equal to LOST_LINK then L_SYM_time = current time - 1 (i.e., expired)
+	 2. if Link Type is equal to SYM_LINK or ASYM_LINK then L_SYM_time = current time + validity time, L_time = L_SYM_time + NEIGHB_HOLD_TIME
+   3. L_time = max(L_time, L_ASYM_time)
+      - 这使得一个不再对称的链路在一个validity time内仍被广播，并使邻居检测到链路的中断
+** Neighbor Detection
+ - 
