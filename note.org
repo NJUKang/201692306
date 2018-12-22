@@ -1,5 +1,5 @@
 * OLSR
-** Introductio
+** Introduction
  - 用途：移动自治系统 mobile ad-hoc networks (MANETs)
  - *MPR* ：邻居节点的子集 通过减少需要转发的节点数有效控制洪泛
  - MPR的responsibility：forwarding control traffic、declaring link state information in the network
